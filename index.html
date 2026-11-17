@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>薬価サーチ</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0f5c4d">
+<style>
+:root{--ink:#1b2733;--sub:#5b6872;--paper:#f4f7f5;--card:#fff;--line:#d6dedb;--pine:#0f5c4d;--on:#fff;--amber:#a4500a;--amber-bg:#fdf0e1;--blue:#274f8f;--blue-bg:#e6eef9;--green:#0f5c4d;--green-bg:#e3f2ec;--k1:#0f5c4d;--k2:#274f8f;--k3:#8a5a00;--k4:#7a3b6b}
+@media(prefers-color-scheme:dark){:root{--ink:#e8eeec;--sub:#9aa8a3;--paper:#11181a;--card:#182124;--line:#2b383b;--pine:#3fb596;--on:#04201a;--amber:#f0a45d;--amber-bg:#3a2a16;--blue:#8fb2ee;--blue-bg:#1d2a40;--green:#6fd0b3;--green-bg:#17302a;--k1:#3fb596;--k2:#8fb2ee;--k3:#e2b350;--k4:#d996c8}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Noto Sans JP",sans-serif;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px}
+header{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+header .wrap{padding-top:10px;padding-bottom:10px}
+h1{margin:0;font-size:1.05rem;letter-spacing:.04em}
+#st{margin:2px 0 8px;font-size:.82rem;color:var(--sub);border-left:3px solid var(--line);padding-left:8px}
+#st.ok{border-color:var(--pine)}#st.new{border-color:var(--amber);color:var(--amber);background:var(--amber-bg);font-weight:700;padding:4px 8px}
+#q{width:100%;font:inherit;font-size:1.1rem;padding:11px 12px;border:2px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
+#q:focus-visible,button:focus-visible{outline:3px solid var(--pine);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips button{font:inherit;font-size:.85rem;padding:3px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--pine);border-color:var(--pine);color:var(--on)}
+.sep{width:1px;background:var(--line);margin:0 4px}
+#cnt{margin:10px 0 6px;font-size:.85rem;color:var(--sub)}
+ul{list-style:none;margin:0;padding:0}
+li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--kc);border-radius:4px;padding:9px 12px;margin-bottom:6px}
+li[data-k="内用薬"]{--kc:var(--k1)}li[data-k="注射薬"]{--kc:var(--k2)}li[data-k="外用薬"]{--kc:var(--k3)}li[data-k="歯科用薬剤"]{--kc:var(--k4)}
+.nm{font-weight:700;overflow-wrap:anywhere}
+.sp{color:var(--sub);font-size:.9rem}
+.pr{grid-row:1/3;grid-column:2;text-align:right;font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums;align-self:center;white-space:nowrap}
+.pr small{font-size:.75rem;font-weight:400;color:var(--sub);margin-left:2px}
+.meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:2px 10px;font-size:.82rem;color:var(--sub)}
+.meta b{font-weight:400;color:var(--kc)}
+.tg{font-size:.72rem;line-height:1.5;border:1px solid var(--line);border-radius:3px;padding:0 6px;color:var(--ink)}
+.tg.br{background:var(--blue-bg);color:var(--blue);border-color:transparent}.tg.gn{background:var(--green-bg);color:var(--green);border-color:transparent}.tg.wn{background:var(--amber-bg);color:var(--amber);border-color:transparent}
+#more{display:block;width:100%;font:inherit;padding:10px;margin:8px 0 16px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
+.msg{padding:28px 4px;color:var(--sub)}
+footer{padding:8px 0 28px;font-size:.78rem;color:var(--sub)}footer a{color:inherit}
+@media(max-width:420px){.pr{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>薬価サーチ</h1>
+  <p id="st">データを読み込んでいます</p>
+  <input id="q" type="search" placeholder="品名・成分名・メーカー・コード（空白でAND検索）" aria-label="検索" autocomplete="off" enterkeyhint="search">
+  <div class="chips" id="chips">
+    <button data-g="k" data-v="内用薬" aria-pressed="false">内用</button><button data-g="k" data-v="注射薬" aria-pressed="false">注射</button><button data-g="k" data-v="外用薬" aria-pressed="false">外用</button><button data-g="k" data-v="歯科用薬剤" aria-pressed="false">歯科</button>
+    <span class="sep"></span>
+    <button data-g="b" data-v="b" aria-pressed="false">先発品</button><button data-g="b" data-v="g" aria-pressed="false">後発品</button>
+  </div>
+</div></header>
+<main class="wrap">
+  <p id="cnt"></p>
+  <ul id="list"></ul>
+  <button id="more" hidden>さらに表示</button>
+  <footer>出典：<a href="https://www.mhlw.go.jp/topics/2026/04/tp20260401-01.html" target="_blank" rel="noopener">厚生労働省「薬価基準収載品目リスト及び後発医薬品に関する情報について」</a>を加工して作成。薬価は規格単位あたりの価格です。診療・調剤の前に公式資料で確認してください。</footer>
+</main>
+<script>
+const $=s=>document.querySelector(s), PAGE=80;
+const nfkc=s=>(s||'').normalize('NFKC');
+const key=s=>nfkc(s).toLowerCase().replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/\s+/g,'');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=p=>p.toLocaleString('ja-JP',{maximumFractionDigits:2});
+const wareki=iso=>{const [y,m,d]=iso.split('-').map(Number);return `令和${y-2018}年${m}月${d}日`};
+let D=[],view=[],shown=0,F={k:'',b:''};
+
+function row(o){
+  const t=[];
+  if(o.brand)t.push(`<span class="tg br">${esc(o.brand)}</span>`);
+  if(o.gen)t.push(o.gen==='★'?'<span class="tg gn" title="先発品と同額か高い後発品（加算等の算定対象外）">後発品★</span>':`<span class="tg gn">${esc(o.gen)}</span>`);
+  if(o.hg)t.push('<span class="tg">後発あり</span>');
+  if(o.marks)t.push(`<span class="tg">${esc(o.marks)}</span>`);
+  if(o.exp)t.push(`<span class="tg wn">経過措置 ${esc(o.exp)}</span>`);
+  return `<li data-k="${esc(o.kubun)}"><div class="nm">${esc(o.name)}</div><div class="pr">${fmt(o.price)}<small>円</small></div>
+<div class="sp">${esc(o.spec||'')}</div>
+<div class="meta"><b>${esc(o.kubun)}</b><span>${esc(o.ing||'')}</span><span>${esc(o.maker||'')}</span>${o.note?`<span>${esc(o.note)}</span>`:''}${t.join('')}</div></li>`;
+}
+function more(){
+  const next=view.slice(shown,shown+PAGE);
+  $('#list').insertAdjacentHTML('beforeend',next.map(row).join(''));
+  shown+=next.length;
+  $('#more').hidden=shown>=view.length;
+}
+function search(){
+  const terms=nfkc($('#q').value).trim().split(/\s+/).map(key).filter(Boolean);
+  $('#list').innerHTML='';shown=0;view=[];$('#more').hidden=true;
+  if(!terms.length){$('#cnt').textContent='';$('#list').innerHTML=`<p class="msg">品名・成分名・メーカー・コードで検索できます（例：ロキソ 錠）。全${D.length.toLocaleString()}品目。</p>`;return}
+  const t0=terms[0];
+  view=D.filter(o=>(!F.k||o.kubun===F.k)&&(F.b===''||(F.b==='b'?o.brand:o.gen))&&terms.every(t=>o.k.includes(t)))
+        .map(o=>[o.nk.startsWith(t0)?0:o.nk.includes(t0)?1:2,o]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  $('#cnt').textContent=`${view.length.toLocaleString()}件`;
+  if(!view.length){$('#list').innerHTML='<p class="msg">該当する薬がありません。表記を変えるか、絞り込みを外してください。</p>';return}
+  more();
+}
+async function check(applied){
+  const el=$('#st'), base=`${wareki(applied)}適用`;
+  try{
+    const r=await fetch('latest.json',{cache:'no-store'}); if(!r.ok)throw 0;
+    const j=await r.json(); if(!/^\d{4}-\d\d-\d\d$/.test(j.latest))throw 0;
+    const c=new Date(j.checkedAt), when=isNaN(c)?'':`（最終確認 ${c.getMonth()+1}/${c.getDate()}）`;
+    if(j.latest===applied){el.className='ok';el.textContent=`${base}・最新です${when}`}
+    else if(j.latest>applied){el.className='new';el.textContent=`${base}のデータです。新しい版（${wareki(j.latest)}適用）が公開されています`}
+    else{el.className='';el.textContent=`${base}・確認先の情報が古い可能性があります`}
+  }catch{el.className='';el.textContent=`${base}・最新かどうかは確認できませんでした`}
+}
+async function init(){
+  try{
+    const d=await (await fetch('data.json')).json(), I={};
+    d.cols.forEach((c,i)=>I[c]=i);
+    D=d.rows.map(r=>{const o={kubun:r[I.kubun],code:r[I.code],ing:r[I.ingredient],spec:r[I.spec],marks:r[I.marks],name:r[I.name],maker:r[I.maker],gen:r[I.generic],brand:r[I.brand],hg:r[I.hasGeneric],price:r[I.price],exp:r[I.expire],note:r[I.note]};
+      o.name=nfkc(o.name);o.ing=nfkc(o.ing);o.spec=nfkc(o.spec);o.maker=nfkc(o.maker).replace(/\s+/g,' ');o.exp=nfkc(o.exp);o.note=nfkc(o.note);
+      o.nk=key(o.name);o.k=key([o.name,o.ing,o.maker,o.code].join('|'));return o});
+    search();check(d.appliedDate);
+  }catch{$('#st').textContent='データを読み込めませんでした。通信状況を確認して、ページを再読み込みしてください';$('#list').innerHTML=''}
+}
+$('#q').addEventListener('input',search);
+$('#more').addEventListener('click',more);
+$('#chips').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  const on=b.getAttribute('aria-pressed')==='true', g=b.dataset.g;
+  document.querySelectorAll(`[data-g="${g}"]`).forEach(x=>x.setAttribute('aria-pressed','false'));
+  F[g]=on?'':b.dataset.v; if(!on)b.setAttribute('aria-pressed','true'); search();
+});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+init();
+</script>
+</body>
+</html>
